@@ -7,20 +7,20 @@ require 'complex'
 
 #== Synopsis
 #
-#This class represents the embedded R interpreter. The Singleton module is 
-#mixed in to ensure that only one R interpreter is running in a script at 
+#This class represents the embedded R interpreter. The Singleton module is
+#mixed in to ensure that only one R interpreter is running in a script at
 #any one time and that the interpreter can always be easily accessed without
-#using a global variable. 
+#using a global variable.
 #
-#The R interpreter is started by calling RSRuby.instance. The returned 
-#object represents the R interpreter and R functions are called by 
+#The R interpreter is started by calling RSRuby.instance. The returned
+#object represents the R interpreter and R functions are called by
 #calling methods on this object:
 #
 #  r = RSRuby.instance
 #  r.sum(1,2,3)
 #  puts r.t_test(1,2,3)['p-value']
 #
-#See the manual[http://web.kuicr.kyoto-u.ac.jp/~alexg/rsruby/manual.pdf] for 
+#See the manual[http://web.kuicr.kyoto-u.ac.jp/~alexg/rsruby/manual.pdf] for
 #more details on calling functions and the conversion system for passing data
 #between Ruby and R. If no suitable conversion from R to Ruby is found, an RObj
 #is returned (all R functions are returned as instances of RObj).
@@ -81,17 +81,17 @@ class RSRuby
 
     @class_table = {}
     @proc_table  = {}
-    
+
     @caching = true
     reset_cache
-    
+
     #Catch errors
     self.__init_eval_R__("options(error=expression(NULL))")
     #disable errors
     self.__init_eval_R__("options(show.error.messages=F)")
 
   end
-  
+
   def reset_cache
     #Setup R object cache
     @cache = {}
@@ -107,11 +107,11 @@ class RSRuby
     @cache['NA']    = self.__init_eval_R__('NA')
     @cache['NaN']   = self.__init_eval_R__('NaN')
     # @cache['NAN']   = self.eval_R('as.double(NA)')
-    
+
     #help!
     @cache['helpfun'] = self.with_mode(NO_CONVERSION, self.__getitem__('help',true))
   end
-  
+
   #Delete an R object from the cache. Use R-style function naming, not ruby style.
   def delete_from_cache(x)
     @cache.delete(x)
@@ -134,7 +134,7 @@ class RSRuby
     #Translate Ruby method call to R
     robj_name = RSRuby.convert_method_name(r_id.to_s)
 
-    robj = robj_name =~ /(.+)::(.+)/ ? self.send('::',$1,$2) : self.__getitem__(robj_name) 
+    robj = robj_name =~ /(.+)::(.+)/ ? self.send('::',$1,$2) : self.__getitem__(robj_name)
 
     #TODO perhaps this is not neccessary - always call these methods
     #use the [] syntax for variables etc...
@@ -142,8 +142,8 @@ class RSRuby
 
       #convert arguments to lcall format
       lcall_args = RSRuby.convert_args_to_lcall(args)
-      
-      #Return result of calling object with lcall 
+
+      #Return result of calling object with lcall
       #formatted args
       return robj.lcall(lcall_args)
 
@@ -151,7 +151,7 @@ class RSRuby
 
     return robj
 
-  end  
+  end
 
   #The same as  method_missing, but only returns the R function/object,
   #does not call it.
@@ -159,10 +159,10 @@ class RSRuby
 
     #Translate Ruby method call to R
     robj_name = RSRuby.convert_method_name(r_id.to_s)
-    
+
     #Retrieve it
     robj = self.__getitem__(robj_name)
-    
+
     #And return it
     return robj
 
@@ -175,7 +175,7 @@ class RSRuby
     return func
   end
 
-  #Converts a String representing a 'Ruby-style' R function name into a 
+  #Converts a String representing a 'Ruby-style' R function name into a
   #String with the real R name according to the rules given in the manual.
   def RSRuby.convert_method_name(name)
     if name.length > 1 and name[-1].chr == '_' and name[-2].chr != '_'
@@ -186,20 +186,20 @@ class RSRuby
     return newname
   end
 
-  #Converts an Array of function arguments into lcall format. If the last 
-  #element of the array is a Hash then the contents of the Hash are 
+  #Converts an Array of function arguments into lcall format. If the last
+  #element of the array is a Hash then the contents of the Hash are
   #interpreted as named arguments.
   #
-  #The returned value is an Array of tuples (Arrays of length two). Each 
+  #The returned value is an Array of tuples (Arrays of length two). Each
   #tupple corresponds to a name/argument pair.
   #
   #For example:
-  #  convert_args_to_lcall([1,2,3,{:a=>4,:b=>5}) 
+  #  convert_args_to_lcall([1,2,3,{:a=>4,:b=>5})
   #  => [['',1],['',2],['',3],['a',4],['b',5]]
   def RSRuby.convert_args_to_lcall(args)
 
     lcall_args = []
-    
+
     args.each_with_index do |arg,i|
       unless arg.kind_of?(Hash) and i == args.length-1
         lcall_args.push(['',arg])
@@ -306,7 +306,7 @@ class RException < RuntimeError
       @r_traceback = RSRuby.instance.traceback_character('max.lines'=>10)
     else
       r_full_traceback = RSRuby.instance.get(".Traceback")
-      r_shortened_traceback = r_full_traceback.map{|x| x.first(10)}
+      r_shortened_traceback = r_full_traceback#.map{|x| x.first(10)} # traceback is a RObj in R 4
       @r_traceback = r_shortened_traceback.flatten
     end
     RSRuby.set_default_mode(e)
